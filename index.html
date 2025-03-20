@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>미라클머닝 - 개인 금전 관리</title>
+  <!-- a아쿠아리움 폰트 예시 -->
+  <style>
+    @font-face {
+      font-family: 'AAquarium';
+      src: url('https://cdn.jsdelivr.net/gh/yourusername/a-aquarium-font/aquarium.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/yourusername/a-aquarium-font/aquarium.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+    body {
+      font-family: 'AAquarium', sans-serif;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.5s; /* 티어 배경색 전환 */
+      background-color: #fff; /* 기본 배경 */
+    }
+
+    /* 상단 로고 영역 */
+    #logoContainer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    #miracleLogo {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+    }
+
+    /* 오른쪽 상단 유저 정보 버튼 (고정) */
+    #userInfoButtonContainer {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+    }
+    #userInfoBtn {
+      background-color: #333;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    #userInfoBtn:hover {
+      background-color: #555;
+    }
+
+    /* 메인 컨테이너: 가운데 정렬, 흰색 배경 + 그림자 */
+    .container {
+      max-width: 800px;
+      margin: 20px auto 60px auto;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 10px 0;
+      font-size: 32px;
+      text-align: center;
+    }
+    h2 {
+      margin: 10px 0;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    /* 달력 헤더 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    #currentYearMonth {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    /* 버튼 기본 스타일 */
+    button {
+      background-color: #333;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #555;
+    }
+
+    /* 입력창 스타일 */
+    input[type="number"],
+    input[type="text"],
+    input[type="email"],
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    /* 급여 리스트 */
+    .income-list {
+      margin: 10px 0;
+    }
+    .income-item {
+      border: 1px solid #ddd;
+      padding: 5px;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    /* 달력 */
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .day {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      min-height: 80px;
+      position: relative;
+      background-color: #fff;
+      transition: background-color 0.3s;
+      font-size: 14px;
+    }
+    .day:hover {
+      background-color: #f9f9f9;
+      cursor: pointer;
+    }
+
+    /* 티어 아이콘 */
+    #tierIcon {
+      display: block;
+      margin: 10px auto;
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+    }
+    #nextTierInfo {
+      color: #ff0000;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    /* 모달(팝업) 공통 스타일 */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #888;
+      width: 300px;
+      max-width: 90%;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      position: relative;
+      text-align: center;
+    }
+    .modal-content h3 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+    .close-btn {
+      float: right;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    /* 인트로 모달 (4단계) */
+    #introModal .modal-content {
+      width: 400px;
+      text-align: center;
+    }
+    #introText {
+      margin: 20px 0;
+      font-size: 16px;
+      line-height: 1.4;
+      text-align: center;
+    }
+    #introImage {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      max-height: 200px;
+      object-fit: cover;
+    }
+
+    /* 내 저금통 (시각화) */
+    .piggy-bank-container {
+      text-align: center;
+      margin: 20px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .piggy-bank-container h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    #piggyBankAmount {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 5px;
+      color: #ff5722;
+    }
+
+  </style>
+</head>
+<body>
+  <!-- 홈페이지 로고 (상단 중앙) -->
+  <div id="logoContainer">
+    <!-- 예시: 미라클머니 로고 이미지 -->
+    <img id="miracleLogo" src="miracle_money_logo.png" alt="Miracle Money Logo">
+  </div>
+
+  <!-- 오른쪽 상단 유저 정보 버튼 -->
+  <div id="userInfoButtonContainer">
+    <button id="userInfoBtn">유저 정보</button>
+  </div>
+
+  <!-- 인트로 모달 (4단계) -->
+  <div id="introModal" class="modal" style="display: block;">
+    <div class="modal-content">
+      <span id="closeIntroModal" class="close-btn">&times;</span>
+      <!-- 인트로에 표시할 이미지 -->
+      <img id="introImage" src="introImage.png" alt="인트로 이미지">
+      <div id="introText"></div>
+      <button id="introNextBtn">다음</button>
+    </div>
+  </div>
+
+  <!-- 유저 정보 입력/확인 모달 -->
+  <div id="userInfoModal" class="modal">
+    <div class="modal-content">
+      <span id="closeUserInfoModal" class="close-btn">&times;</span>
+      <h3>유저 정보</h3>
+      <label>닉네임:
+        <input type="text" id="userNicknameInput" placeholder="닉네임 입력">
+      </label>
+      <label>이메일:
+        <input type="email" id="userEmailInput" placeholder="이메일 입력">
+      </label>
+      <button id="saveUserInfoBtn">저장</button>
+      <hr>
+      <p><strong>닉네임:</strong> <span id="displayNickname"></span></p>
+      <p><strong>이메일:</strong> <span id="displayEmail"></span></p>
+    </div>
+  </div>
+
+  <!-- 메인 컨테이너 -->
+  <div class="container">
+    <h1>미라클머닝</h1>
+
+    <!-- "내 저금통" 영역 -->
+    <div class="piggy-bank-container">
+      <h2>내 저금통</h2>
+      <div id="piggyBankAmount">0원</div>
+    </div>
+
+    <h2>하루에 쓸 수 있는 금액: <span id="dailyAllowance">0</span> 원</h2>
+    <img id="tierIcon" src="" alt="티어 아이콘">
+    <div id="nextTierInfo"></div>
+
+    <!-- 달력 헤더 -->
+    <div class="header">
+      <button id="prevMonthBtn">&lt; 이전 달</button>
+      <div id="currentYearMonth"></div>
+      <button id="nextMonthBtn">다음 달 &gt;</button>
+    </div>
+
+    <!-- 급여 추가 및 목록 -->
+    <button id="addIncomeBtn">한달 급여 추가</button>
+    <div id="incomeList" class="income-list"></div>
+
+    <!-- 저금액 입력 -->
+    <div style="margin: 10px 0;">
+      <label for="savingsInput" style="font-size:14px;">저금액 입력:</label>
+      <input type="number" id="savingsInput" value="0">
+      <button id="updateSavingsBtn">저금 적용</button>
+    </div>
+
+    <!-- 달력 -->
+    <div id="calendar" class="calendar"></div>
+  </div>
+
+  <!-- 급여 추가 모달 -->
+  <div id="incomeModal" class="modal">
+    <div class="modal-content">
+      <span id="closeModal" class="close-btn">&times;</span>
+      <h3>급여 추가</h3>
+      <label>이름:
+        <input type="text" id="incomeName">
+      </label>
+      <label>금액:
+        <input type="number" id="incomeAmount">
+      </label>
+      <label>급여 종류:
+        <select id="incomeType">
+          <option value="weekly">주급</option>
+          <option value="monthly">월급</option>
+        </select>
+      </label>
+      <!-- 주급 옵션 (월, 화, 수, 목, 금, 토, 일) -->
+      <div id="weeklyOptions">
+        <label>지급 요일:
+          <select id="incomeWeekdaySelect">
+            <option value="1">월</option>
+            <option value="2">화</option>
+            <option value="3">수</option>
+            <option value="4">목</option>
+            <option value="5">금</option>
+            <option value="6">토</option>
+            <option value="0">일</option>
+          </select>
+        </label>
+      </div>
+      <!-- 월급 옵션 -->
+      <div id="monthlyOptions" style="display:none;">
+        <label>지급 날짜 (1~31):
+          <input type="number" id="incomeMonthday" min="1" max="31">
+        </label>
+      </div>
+      <button id="saveIncomeBtn">저장</button>
+    </div>
+  </div>
+
+  <script>
+    /*****************************************************************
+     * 0. 인트로 (4단계) 관련
+     *****************************************************************/
+    let introStep = 0;
+    const introMessages = [
+      `안녕하세요 그동안 개인적인 금전 관리가 안되서 힘드셨죠?<br>
+       1. 어느새 사라져버린 내 용돈, 다음 달 용돈은 언제 들어오는거지 ㅠㅠ?`,
+      `2. 나는 대체 하루에 얼마를 쓸 수 있는거야<br>
+       아 누가 대신 알려줬으면 좋겠다..`,
+      `3. 그래 저금! 나는 저금도 하고 싶은데 계산하기 너무 귀찮아<br>
+       저금 금액도 쓰고 내가 한달에 버는 금액도 적어서<br>
+       하루에 얼마나 쓸 지 정해서 쓰는 습관을 길러야겠다!`,
+      `바로 <strong>미라클머닝</strong>입니다!<br>
+       그럼 시작해볼까요?`
+    ];
+    const introModal = document.getElementById('introModal');
+    const introText = document.getElementById('introText');
+    const introNextBtn = document.getElementById('introNextBtn');
+    const closeIntroModal = document.getElementById('closeIntroModal');
+
+    function showIntroStep(step) {
+      introText.innerHTML = introMessages[step];
+      if (step < 3) {
+        introNextBtn.textContent = "다음";
+      } else {
+        introNextBtn.textContent = "시작하기";
+      }
+    }
+    showIntroStep(introStep);
+
+    introNextBtn.addEventListener('click', function() {
+      if (introStep < 3) {
+        introStep++;
+        showIntroStep(introStep);
+      } else {
+        // '시작하기' -> 인트로 모달 닫고, 유저 정보 모달 열기
+        introModal.style.display = 'none';
+        userInfoModal.style.display = 'block';
+      }
+    });
+    closeIntroModal.addEventListener('click', function() {
+      introModal.style.display = 'none';
+    });
+
+    /*****************************************************************
+     * 1. 유저 정보 입력/확인
+     *****************************************************************/
+    let userNickname = "";
+    let userEmail = "";
+
+    const userInfoModal = document.getElementById('userInfoModal');
+    const closeUserInfoModal = document.getElementById('closeUserInfoModal');
+    const userInfoBtn = document.getElementById('userInfoBtn');
+    const saveUserInfoBtn = document.getElementById('saveUserInfoBtn');
+
+    const userNicknameInput = document.getElementById('userNicknameInput');
+    const userEmailInput = document.getElementById('userEmailInput');
+    const displayNickname = document.getElementById('displayNickname');
+    const displayEmail = document.getElementById('displayEmail');
+
+    function openUserInfoModal() {
+      // 모달 열 때, 현재 저장된 닉네임/이메일을 인풋에 표시
+      userNicknameInput.value = userNickname;
+      userEmailInput.value = userEmail;
+      userInfoModal.style.display = 'block';
+    }
+
+    function closeUserInfo() {
+      userInfoModal.style.display = 'none';
+    }
+
+    userInfoBtn.addEventListener('click', openUserInfoModal);
+    closeUserInfoModal.addEventListener('click', closeUserInfo);
+
+    saveUserInfoBtn.addEventListener('click', function() {
+      userNickname = userNicknameInput.value.trim();
+      userEmail = userEmailInput.value.trim();
+
+      displayNickname.textContent = userNickname || "(미입력)";
+      displayEmail.textContent = userEmail || "(미입력)";
+    });
+
+    /*****************************************************************
+     * 2. 색상 어둡게/밝게 (지출 칸 배경)
+     *****************************************************************/
+    function lightenDarkenColor(hex, amt) {
+      hex = hex.replace(/^#/, '');
+      if (hex.length === 3) {
+        // #RGB -> #RRGGBB
+        hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+      }
+      let r = parseInt(hex.substring(0,2),16);
+      let g = parseInt(hex.substring(2,4),16);
+      let b = parseInt(hex.substring(4,6),16);
+
+      r = Math.min(255, Math.max(0, r + amt));
+      g = Math.min(255, Math.max(0, g + amt));
+      b = Math.min(255, Math.max(0, b + amt));
+
+      let rr = (r.toString(16).length == 1) ? "0" + r.toString(16) : r.toString(16);
+      let gg = (g.toString(16).length == 1) ? "0" + g.toString(16) : g.toString(16);
+      let bb = (b.toString(16).length == 1) ? "0" + b.toString(16) : b.toString(16);
+
+      return "#" + rr + gg + bb;
+    }
+
+    /*****************************************************************
+     * 3. 티어 설정
+     *****************************************************************/
+    const TIER_DATA = [
+      { name: "Iron",         threshold: 500,    color: "#5a5a5a",  icon: "images/iron.png" },
+      { name: "Bronze",       threshold: 1000,   color: "#8C7853",  icon: "images/bronze.png" },
+      { name: "Silver",       threshold: 2000,   color: "#C0C0C0",  icon: "images/silver.png" },
+      { name: "Gold",         threshold: 5000,   color: "#FFD700",  icon: "images/gold.png" },
+      { name: "Platinum",     threshold: 10000,  color: "#E5E4E2",  icon: "images/platinum.png" },
+      { name: "Emerald",      threshold: 20000,  color: "#50C878",  icon: "images/emerald.png" },
+      { name: "Diamond",      threshold: 30000,  color: "#B9F2FF",  icon: "images/diamond.png" },
+      { name: "Master",       threshold: 50000,  color: "#E0BBE4",  icon: "images/master.png" },
+      { name: "Grandmaster",  threshold: 100000, color: "#FF9BB3",  icon: "images/grandmaster.png" },
+      { name: "Challenger",   threshold: Infinity, color: "#FF4500", icon: "images/challenger.png" }
+    ];
+
+    function getTierIndex(allowance) {
+      for (let i = 0; i < TIER_DATA.length; i++) {
+        if (allowance < TIER_DATA[i].threshold) {
+          return i;
+        }
+      }
+      return TIER_DATA.length - 1;
+    }
+
+    function getNextTierInfo(allowance) {
+      let idx = getTierIndex(allowance);
+      if (idx >= TIER_DATA.length - 1) {
+        return null;
+      }
+      let nextThreshold = TIER_DATA[idx].threshold;
+      let difference = nextThreshold - allowance;
+      let nextTierName = TIER_DATA[idx + 1].name;
+      return { difference, nextTierName };
+    }
+
+    /*****************************************************************
+     * 4. 전역 변수
+     *****************************************************************/
+    let incomes = [];          // { name, amount, type, day }
+    let dailySpendings = {};   // key: 'YYYY-MM-DD', value: number
+    let monthlyTotal = 0;
+    let savings = 0;           // 저금 금액
+    let currentDailyAllowance = 0;
+    let previousTierIndex = 0; // 승급 체크용
+
+    const today = new Date();
+    let currentYear = today.getFullYear();
+    let currentMonth = today.getMonth();
+
+    /*****************************************************************
+     * 5. 하루 예산 계산 + 티어 적용
+     *****************************************************************/
+    function updateDailyAllowance() {
+      // (1) 총 급여 계산
+      let totalIncome = 0;
+      const lastDay = new Date(currentYear, currentMonth + 1, 0);
+      const numDays = lastDay.getDate();
+
+      incomes.forEach(income => {
+        if (income.type === 'monthly') {
+          totalIncome += income.amount;
+        } else if (income.type === 'weekly') {
+          let count = 0;
+          for (let d = 1; d <= numDays; d++) {
+            const dateObj = new Date(currentYear, currentMonth, d);
+            if (dateObj.getDay() === income.day) {
+              count++;
+            }
+          }
+          totalIncome += income.amount * count;
+        }
+      });
+      monthlyTotal = totalIncome;
+
+      // (2) 저금 + 지출 차감
+      let available = totalIncome - savings;
+      let spent = 0;
+      for (let key in dailySpendings) {
+        const dateObj = new Date(key);
+        if (dateObj.getFullYear() === currentYear && dateObj.getMonth() === currentMonth) {
+          spent += dailySpendings[key];
+        }
+      }
+      available -= spent;
+
+      // (3) 남은 날짜 수
+      let remainingDays = 0;
+      for (let d = 1; d <= numDays; d++) {
+        const dateStr = `${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+        if (dailySpendings[dateStr] === undefined) {
+          remainingDays++;
+        }
+      }
+
+      // (4) 하루 예산
+      currentDailyAllowance = (remainingDays > 0) ? Math.floor(available / remainingDays) : 0;
+      document.getElementById('dailyAllowance').innerText = currentDailyAllowance;
+
+      // (5) 티어 적용
+      let tierIndex = getTierIndex(currentDailyAllowance);
+      let tierData = TIER_DATA[tierIndex];
+
+      // 배경색 & 아이콘 변경
+      document.body.style.backgroundColor = tierData.color;
+      document.getElementById('tierIcon').src = tierData.icon;
+
+      // 승급 체크
+      if (tierIndex > previousTierIndex) {
+        previousTierIndex = tierIndex;
+        // 여기서 승급 이벤트(동영상 모달 등) 추가 가능
+      }
+
+      // (6) 다음 등급 정보
+      let nextTier = getNextTierInfo(currentDailyAllowance);
+      if (nextTier === null) {
+        document.getElementById('nextTierInfo').innerText = "최고 등급입니다!";
+      } else {
+        document.getElementById('nextTierInfo').innerText =
+          `다음 등급(${nextTier.nextTierName})까지 ${nextTier.difference}원 남았습니다!`;
+      }
+
+      // (7) 내 저금통 표시
+      document.getElementById('piggyBankAmount').innerText = savings + "원";
+    }
+
+    /*****************************************************************
+     * 6. 달력 생성
+     *****************************************************************/
+    function generateCalendar(year, month) {
+      const calendarDiv = document.getElementById('calendar');
+      calendarDiv.innerHTML = '';
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const numDays = lastDay.getDate();
+
+      // 현재 티어 색상 기반 지출 칸 색
+      let tierIndex = getTierIndex(currentDailyAllowance);
+      let tierColor = TIER_DATA[tierIndex].color;
+      let expenseColor = lightenDarkenColor(tierColor, -40);
+
+      // 1) 시작 전 빈 칸
+      let startDay = firstDay.getDay();
+      for (let i = 0; i < startDay; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'day';
+        calendarDiv.appendChild(emptyDiv);
+      }
+
+      // 2) 날짜 칸
+      for (let d = 1; d <= numDays; d++) {
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'day';
+        const dateStr = `${year}-${(month+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+        dateDiv.setAttribute('data-date', dateStr);
+
+        // 날짜 번호
+        dateDiv.innerHTML = `<strong>${d}</strong><br>`;
+
+        // 해당 날짜에 지급되는 급여
+        incomes.forEach(income => {
+          if (income.type === 'monthly' && income.day === d) {
+            dateDiv.innerHTML += `<div>${income.name}: ${income.amount}원</div>`;
+          } else if (income.type === 'weekly') {
+            const dateObj = new Date(year, month, d);
+            if (dateObj.getDay() === income.day) {
+              dateDiv.innerHTML += `<div>${income.name}: ${income.amount}원</div>`;
+            }
+          }
+        });
+
+        // 지출 기록
+        if (dailySpendings[dateStr] !== undefined) {
+          dateDiv.style.backgroundColor = expenseColor;
+          dateDiv.innerHTML += `<div>지출: ${dailySpendings[dateStr]}원</div>`;
+        }
+
+        // 클릭 -> 지출 입력
+        dateDiv.addEventListener('click', function() {
+          const currentSpend = dailySpendings[dateStr] || 0;
+          const spendingStr = prompt(`이날 지출 금액을 입력하세요 (현재: ${currentSpend}원):`);
+          // 사용자가 아무것도 입력 안 하거나 취소 -> 기록 안 함
+          if (spendingStr === null) {
+            return;
+          }
+          const trimmed = spendingStr.trim();
+          if (trimmed === "") {
+            return; // 빈 칸도 무시
+          }
+          const spending = parseFloat(trimmed);
+          if (!isNaN(spending) && spending >= 0) {
+            dailySpendings[dateStr] = spending;
+            // 티어 즉시 반영 + 달력 다시 그리기 (순서 중요)
+            updateDailyAllowance(); 
+            generateCalendar(currentYear, currentMonth);
+          }
+        });
+
+        calendarDiv.appendChild(dateDiv);
+      }
+    }
+
+    /*****************************************************************
+     * 7. 급여 목록 갱신
+     *****************************************************************/
+    function updateIncomeList() {
+      const listDiv = document.getElementById('incomeList');
+      listDiv.innerHTML = '';
+      incomes.forEach((income, index) => {
+        const div = document.createElement('div');
+        div.className = 'income-item';
+        
+        let typeLabel = (income.type === 'monthly') ? '월급' : '주급';
+        let dayKorean = ["일","월","화","수","목","금","토"][income.day];
+        let dayLabel = (income.type === 'monthly')
+          ? (income.day + '일')
+          : (dayKorean + "요일");
+        
+        div.innerHTML = `<span>${income.name} (${typeLabel} - ${dayLabel}): ${income.amount}원</span>`;
+        
+        const delBtn = document.createElement('button');
+        delBtn.innerText = '삭제';
+        delBtn.addEventListener('click', function() {
+          incomes.splice(index, 1);
+          updateIncomeList();
+          updateDailyAllowance(); // 티어 반영
+          generateCalendar(currentYear, currentMonth);
+        });
+        
+        div.appendChild(delBtn);
+        listDiv.appendChild(div);
+      });
+    }
+
+    /*****************************************************************
+     * 8. 급여 추가 모달
+     *****************************************************************/
+    const incomeModal = document.getElementById('incomeModal');
+    const closeModal = document.getElementById('closeModal');
+    const addIncomeBtn = document.getElementById('addIncomeBtn');
+    const saveIncomeBtn = document.getElementById('saveIncomeBtn');
+
+    const incomeNameInput = document.getElementById('incomeName');
+    const incomeAmountInput = document.getElementById('incomeAmount');
+    const incomeTypeSelect = document.getElementById('incomeType');
+    const weeklyOptions = document.getElementById('weeklyOptions');
+    const monthlyOptions = document.getElementById('monthlyOptions');
+    const incomeWeekdaySelect = document.getElementById('incomeWeekdaySelect');
+    const incomeMonthdayInput = document.getElementById('incomeMonthday');
+
+    addIncomeBtn.addEventListener('click', function() {
+      incomeModal.style.display = 'block';
+    });
+    closeModal.addEventListener('click', function() {
+      incomeModal.style.display = 'none';
+    });
+
+    incomeTypeSelect.addEventListener('change', function() {
+      if (this.value === 'weekly') {
+        weeklyOptions.style.display = 'block';
+        monthlyOptions.style.display = 'none';
+      } else {
+        weeklyOptions.style.display = 'none';
+        monthlyOptions.style.display = 'block';
+      }
+    });
+
+    saveIncomeBtn.addEventListener('click', function() {
+      const name = incomeNameInput.value.trim();
+      const amount = parseFloat(incomeAmountInput.value);
+      const type = incomeTypeSelect.value;
+      
+      if (!name || isNaN(amount) || amount <= 0) {
+        alert("이름과 금액을 올바르게 입력하세요.");
+        return;
+      }
+      
+      let day;
+      if (type === 'weekly') {
+        day = parseInt(incomeWeekdaySelect.value, 10);
+      } else {
+        day = parseInt(incomeMonthdayInput.value, 10);
+      }
+
+      incomes.push({ name, amount, type, day });
+      incomeModal.style.display = 'none';
+      updateIncomeList();
+      updateDailyAllowance();
+      generateCalendar(currentYear, currentMonth);
+    });
+
+    /*****************************************************************
+     * 9. 저금 적용
+     *****************************************************************/
+    const savingsInput = document.getElementById('savingsInput');
+    const updateSavingsBtn = document.getElementById('updateSavingsBtn');
+    updateSavingsBtn.addEventListener('click', function() {
+      let val = parseFloat(savingsInput.value);
+      if (isNaN(val) || val < 0) {
+        val = 0;
+      }
+      savings = val;
+      updateDailyAllowance();
+      generateCalendar(currentYear, currentMonth);
+    });
+
+    /*****************************************************************
+     * 10. 달 이동
+     *****************************************************************/
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const currentYearMonth = document.getElementById('currentYearMonth');
+
+    function updateYearMonthDisplay() {
+      currentYearMonth.innerText = currentYear + '년 ' + (currentMonth + 1) + '월';
+    }
+
+    prevMonthBtn.addEventListener('click', function() {
+      if (currentMonth === 0) {
+        currentMonth = 11;
+        currentYear--;
+      } else {
+        currentMonth--;
+      }
+      updateYearMonthDisplay();
+      updateDailyAllowance();
+      generateCalendar(currentYear, currentMonth);
+    });
+
+    nextMonthBtn.addEventListener('click', function() {
+      if (currentMonth === 11) {
+        currentMonth = 0;
+        currentYear++;
+      } else {
+        currentMonth++;
+      }
+      updateYearMonthDisplay();
+      updateDailyAllowance();
+      generateCalendar(currentYear, currentMonth);
+    });
+
+    /*****************************************************************
+     * 11. 초기 실행
+     *****************************************************************/
+    function init() {
+      updateYearMonthDisplay();
+      updateIncomeList();
+      updateDailyAllowance();
+      generateCalendar(currentYear, currentMonth);
+      previousTierIndex = getTierIndex(currentDailyAllowance);
+    }
+    init();
+  </script>
+</body>
+</html>
